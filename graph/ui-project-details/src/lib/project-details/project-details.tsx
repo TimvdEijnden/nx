@@ -41,11 +41,6 @@ export const ProjectDetails = ({
   const projectData = project.data;
   const isCompact = variant === 'compact';
 
-  const displayType =
-    projectData.projectType &&
-    projectData.projectType?.charAt(0)?.toUpperCase() +
-      projectData.projectType?.slice(1);
-
   const technologies = [
     ...new Set(
       [
@@ -98,24 +93,33 @@ export const ProjectDetails = ({
         </div>
         <div className="flex justify-between py-2">
           <div>
+            {projectData.metadata?.description ? (
+              <p className="mb-2 text-sm capitalize text-gray-500 dark:text-slate-400">
+                {projectData.metadata?.description}
+              </p>
+            ) : null}
             {projectData.tags && projectData.tags.length ? (
               <p>
-                <span className="inline-block w-10 font-medium">Tags:</span>
+                <span className="font-medium">Tags:</span>
                 {projectData.tags?.map((tag) => (
-                  <span className="ml-2 font-mono">
+                  <span className="ml-2 font-mono lowercase">
                     <Pill text={tag} />
                   </span>
                 ))}
               </p>
             ) : null}
-            <p>
-              <span className="inline-block w-10 font-medium">Root:</span>
-              <span className="font-mono"> {projectData.root}</span>
-            </p>
-            {displayType ? (
+            {projectData.root ? (
               <p>
-                <span className="inline-block w-10 font-medium">Type:</span>
-                <span className="font-mono"> {displayType}</span>
+                <span className="font-medium">Root:</span>
+                <span className="font-mono"> {projectData.root.trim()}</span>
+              </p>
+            ) : null}
+            {projectData.projectType ? (
+              <p>
+                <span className="font-medium">Type:</span>
+                <span className="ml-2 font-mono capitalize">
+                  {projectData.projectType}
+                </span>
               </p>
             ) : null}
           </div>

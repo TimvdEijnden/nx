@@ -3,6 +3,7 @@ import {
   cleanupProject,
   killProcessAndPorts,
   newProject,
+  readFile,
   runCLI,
   runCommandUntil,
   runE2ETests,
@@ -138,6 +139,39 @@ describe('Webpack Plugin (legacy)', () => {
 
     expect(() => {
       runCLI(`build ${appName} --outputHashing none`);
+    }).not.toThrow();
+
+    if (runE2ETests()) {
+      expect(() => {
+        runCLI(`e2e ${appName}-e2e`);
+      }).not.toThrow();
+    }
+  });
+
+  it('should convert withNx webpack config to a standard config using NxWebpackPlugin', () => {
+    const appName = uniq('app');
+    runCLI(
+      `generate @nx/web:app ${appName} --bundler webpack --e2eTestRunner=playwright`
+    );
+    updateFile(
+      `${appName}/src/main.ts`,
+      `
+      const root = document.querySelector('proj-root');
+      if(root) {
+        root.innerHTML = '<h1>Welcome</h1>'
+      }
+    `
+    );
+
+    runCLI(`generate @nx/webpack:convert-config-to-webpack-plugin ${appName}`);
+
+    const webpackConfig = readFile(`apps/${appName}/webpack.config.js`);
+
+    checkFilesExist(`apps/${appName}/webpack.config.old.js`);
+    expect(webpackConfig).toMatchSnapshot();
+
+    expect(() => {
+      runCLI(`build ${appName}`);
     }).not.toThrow();
 
     if (runE2ETests()) {

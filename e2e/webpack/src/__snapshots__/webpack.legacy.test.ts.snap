@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Webpack Plugin (legacy) should convert withNx webpack config to a standard config using NxWebpackPlugin 1`] = `
+"const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
+const { NxReactWebpackPlugin } = require('@nx/react/webpack-plugin');
+
+// This file was migrated using @nx/webpack:convert-config-to-webpack-plugin
+
+module.exports = {
+  plugins: [
+    new NxAppWebpackPlugin(),
+    new NxReactWebpackPlugin({
+      // Uncomment this line if you don't want to use SVGR
+      // See: https://react-svgr.com/
+      // svgr: false
+    }),
+    ,
+  ],
+};
+"
+`;

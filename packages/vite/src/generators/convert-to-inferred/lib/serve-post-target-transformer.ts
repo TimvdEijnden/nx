@@ -1,59 +1,63 @@
 import { type TargetConfiguration, type Tree } from '@nx/devkit';
 import { moveBuildLibsFromSourceToViteConfig } from './build-post-target-transformer';
 import { getViteConfigPath } from './utils';
-import { aggregateLog } from '@nx/devkit/src/generators/plugin-migrations/aggregate-log-util';
+import { AggregatedLog } from '@nx/devkit/src/generators/plugin-migrations/aggregate-log-util';
 
-export function servePostTargetTransformer(
-  target: TargetConfiguration,
-  tree: Tree,
-  projectDetails: { projectName: string; root: string },
-  inferredTargetConfiguration: TargetConfiguration
-) {
-  const viteConfigPath = getViteConfigPath(tree, projectDetails.root);
+export function servePostTargetTransformer(migrationLogs: AggregatedLog) {
+  return (
+    target: TargetConfiguration,
+    tree: Tree,
+    projectDetails: { projectName: string; root: string },
+    inferredTargetConfiguration: TargetConfiguration
+  ) => {
+    const viteConfigPath = getViteConfigPath(tree, projectDetails.root);
 
-  if (target.options) {
-    removePropertiesFromTargetOptions(
-      tree,
-      target.options,
-      viteConfigPath,
-      projectDetails.root,
-      projectDetails.projectName,
-      true
-    );
-  }
-
-  if (target.configurations) {
-    for (const configurationName in target.configurations) {
-      const configuration = target.configurations[configurationName];
+    if (target.options) {
       removePropertiesFromTargetOptions(
         tree,
-        configuration,
+        target.options,
         viteConfigPath,
         projectDetails.root,
-        projectDetails.projectName
+        projectDetails.projectName,
+        migrationLogs,
+        true
       );
-
-      if (Object.keys(configuration).length === 0) {
-        delete target.configurations[configurationName];
-      }
     }
 
-    if (Object.keys(target.configurations).length === 0) {
-      if ('defaultConfiguration' in target) {
+    if (target.configurations) {
+      for (const configurationName in target.configurations) {
+        const configuration = target.configurations[configurationName];
+        removePropertiesFromTargetOptions(
+          tree,
+          configuration,
+          viteConfigPath,
+          projectDetails.root,
+          projectDetails.projectName,
+          migrationLogs
+        );
+
+        if (Object.keys(configuration).length === 0) {
+          delete target.configurations[configurationName];
+        }
+      }
+
+      if (Object.keys(target.configurations).length === 0) {
+        if ('defaultConfiguration' in target) {
+          delete target.defaultConfiguration;
+        }
+        delete target.configurations;
+      }
+
+      if (
+        'defaultConfiguration' in target &&
+        !target.configurations[target.defaultConfiguration]
+      ) {
         delete target.defaultConfiguration;
       }
-      delete target.configurations;
     }
 
-    if (
-      'defaultConfiguration' in target &&
-      !target.configurations[target.defaultConfiguration]
-    ) {
-      delete target.defaultConfiguration;
-    }
-  }
-
-  return target;
+    return target;
+  };
 }
 
 function removePropertiesFromTargetOptions(
@@ -62,6 +66,7 @@ function removePropertiesFromTargetOptions(
   viteConfigPath: string,
   projectRoot: string,
   projectName: string,
+  migrationLogs: AggregatedLog,
   defaultOptions = false
 ) {
   if ('buildTarget' in targetOptions) {
@@ -84,7 +89,7 @@ function removePropertiesFromTargetOptions(
   }
 
   if ('proxyConfig' in targetOptions) {
-    aggregateLog({
+    migrationLogs.addLog({
       executorName: '@nx/vite:dev-server',
       project: projectName,
       log: `Encountered 'proxyConfig' in project.json. You will need to copy the contents of this file to the 'server.proxy' property in your Vite config file.`,
